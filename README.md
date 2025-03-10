@@ -30,8 +30,8 @@ The system verifies whether a face in an image matches any face in the pre-train
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/face-verification-api.git
-   cd face-verification-api
+   git clone https://github.com/Phavour-EBEN/FaceFassX.git
+   cd FaceFassX
    ```
 
 2. Install dependencies:
