@@ -6,6 +6,7 @@ from mtcnn.mtcnn import MTCNN
 from keras_facenet import FaceNet
 from scipy.spatial.distance import cosine
 from flask_cors import CORS
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
