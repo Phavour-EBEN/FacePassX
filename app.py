@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import cv2 as cv
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from mtcnn.mtcnn import MTCNN
 from keras_facenet import FaceNet
 from scipy.spatial.distance import cosine
@@ -9,6 +9,9 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Configuration - hardcoded image path
+DEFAULT_IMAGE_PATH = 'images/WhatsApp Image 2025-03-10 at 3.11.23 PM.jpeg'  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
 class FaceVerificationSystem:
@@ -78,11 +81,12 @@ class FaceVerificationSystem:
             # Check if the similarity is above threshold
             verification_successful = best_match_score > self.similarity_threshold
             
+            # Ensure all values are JSON serializable
             result = {
-                'verification_successful': verification_successful,
-                'confidence': float(best_match_score),
+                'verification_successful': bool(verification_successful),  # Explicitly convert to Python bool
+                'confidence': float(best_match_score),  # Ensure it's a Python float
                 'identity': str(self.known_names[best_match_index]) if verification_successful else None,
-                'matching_score': f"{best_match_score:.2f}"
+                'matching_score': str(round(best_match_score, 2))  # Convert to string explicitly
             }
             
             return result
@@ -104,104 +108,46 @@ def health_check():
         'message': 'Face verification API is running'
     })
 
-@app.route('/verify', methods=['POST'])
+@app.route('/verify', methods=['GET'])
 def verify_face():
-    """Face verification endpoint - handles both file upload and image path"""
+    """Face verification endpoint using hardcoded image path"""
     try:
-        # Check if request is JSON (path-based) or multipart (file upload)
-        if request.is_json:
-            # Get image path from JSON request
-            data = request.get_json()
-            
-            if 'image_path' not in data:
-                return jsonify({
-                    'verification_successful': False,
-                    'error': 'No image_path provided in JSON'
-                }), 400
-                
-            image_path = data['image_path']
-            
-            # Check if file exists
-            if not os.path.exists(image_path):
-                return jsonify({
-                    'verification_successful': False,
-                    'error': f'Image file not found: {image_path}'
-                }), 404
-                
-            # Read image from file
-            image = cv.imread(image_path)
-            
-            if image is None:
-                return jsonify({
-                    'verification_successful': False,
-                    'error': f'Failed to read image from: {image_path}'
-                }), 400
-                
-        elif 'image' in request.files:
-            # Read image from uploaded file
-            file = request.files['image']
-            image_bytes = file.read()
-            nparr = np.frombuffer(image_bytes, np.uint8)
-            image = cv.imdecode(nparr, cv.IMREAD_COLOR)
-            
-        else:
-            return jsonify({
-                'verification_successful': False,
-                'error': 'No image file or image_path provided'
-            }), 400
-        
-        # Verify face
-        result = verifier.verify_face(image)
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        return jsonify({
-            'verification_successful': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/verify_by_path', methods=['POST'])
-def verify_face_by_path():
-    """Face verification endpoint that uses an image path"""
-    try:
-        # Get image path from JSON request
-        data = request.get_json()
-        
-        if 'image_path' not in data:
-            return jsonify({
-                'verification_successful': False,
-                'error': 'No image_path provided in JSON'
-            }), 400
-            
-        image_path = data['image_path']
-        
         # Check if file exists
-        if not os.path.exists(image_path):
+        if not os.path.exists(DEFAULT_IMAGE_PATH):
             return jsonify({
                 'verification_successful': False,
-                'error': f'Image file not found: {image_path}'
-            }), 404
+                'error': f'Image file not found: {DEFAULT_IMAGE_PATH}'
+            })
             
         # Read image from file
-        image = cv.imread(image_path)
+        image = cv.imread(DEFAULT_IMAGE_PATH)
         
         if image is None:
             return jsonify({
                 'verification_successful': False,
-                'error': f'Failed to read image from: {image_path}'
-            }), 400
-            
+                'error': f'Failed to read image from: {DEFAULT_IMAGE_PATH}'
+            })
+        
         # Verify face
         result = verifier.verify_face(image)
         
+        # Ensure the entire result is JSON serializable
+        for key in result:
+            if isinstance(result[key], np.bool_):
+                result[key] = bool(result[key])
+            elif isinstance(result[key], np.floating):
+                result[key] = float(result[key])
+            elif isinstance(result[key], np.integer):
+                result[key] = int(result[key])
+                
         return jsonify(result)
     
     except Exception as e:
+        error_msg = str(e)
         return jsonify({
             'verification_successful': False,
-            'error': str(e)
-        }), 500
+            'error': error_msg
+        })
 
 if __name__ == '__main__':
     # Run the Flask app
