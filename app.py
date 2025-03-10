@@ -12,7 +12,8 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configuration - hardcoded image path
-DEFAULT_IMAGE_PATH = 'images/WhatsApp Image 2025-03-10 at 3.11.23 PM.jpeg'  # Replace with your actual image path
+# DEFAULT_IMAGE_PATH = 'images/WhatsApp Image 2025-03-10 at 3.11.23 PM.jpeg'  # Replace with your actual image path
+DEFAULT_IMAGE_PATH = 'https://drive.google.com/file/d/1u1V_alVhdXeCeQhy1HUCn5TuxkXHdwC-/view?usp=drive_link'  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
 class FaceVerificationSystem:
