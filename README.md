@@ -1,4 +1,4 @@
-# Face Verification API
+# FacePassX Verification API
 
 A Flask-based REST API that provides face verification capabilities using deep learning models. This system compares facial images against a database of known faces and determines if there's a match.
 
