@@ -35,3 +35,6 @@ pylint>=2.8.2
 
 # Deployment
 python-dotenv>=0.17.1
+
+# Optional dependencies
+gunicorn==20.1.0
