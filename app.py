@@ -6,14 +6,40 @@ from mtcnn.mtcnn import MTCNN
 from keras_facenet import FaceNet
 from scipy.spatial.distance import cosine
 from flask_cors import CORS
+import requests
+import json
+from dotenv import load_dotenv
+from supabase import create_client
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# Load environment variables
+load_dotenv()
+# Get Supabase credentials from .env
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+
+response = (
+    supabase.table("verify")
+    .select("id, name, face_image_url")
+    .order("id", desc=True)  # Get the highest ID (newest entry)
+    .limit(1)  # Only get the latest one
+    .execute()
+)
+
+if response.data:
+    image_url = response.data[0]["face_image_url"]
+    print("Newest Image URL:", image_url)
+else:
+    print("No new images found.")
+
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configuration - hardcoded image path
-# DEFAULT_IMAGE_PATH = 'images/WhatsApp Image 2025-03-10 at 3.11.23 PM.jpeg'  # Replace with your actual image path
-DEFAULT_IMAGE_PATH = 'https://drive.google.com/file/d/1u1V_alVhdXeCeQhy1HUCn5TuxkXHdwC-/view?usp=drive_link'  # Replace with your actual image path
+DEFAULT_IMAGE_PATH = 'images/WhatsApp Image 2025-0 3-10 at 3.11.23 PM.jpeg'  # Replace with your actual image path
+# DEFAULT_IMAGE_PATH = str(image_url)  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
 class FaceVerificationSystem:
