@@ -19,6 +19,7 @@ SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
+
 response = (
     supabase.table("verify")
     .select("id, name, face_image_url")
