@@ -21,7 +21,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 response = (
     supabase.table("verify")
-    .select("id, name, face_image_url")
+    .select("id, face_image_url")
     .order("id", desc=True)  # Get the highest ID (newest entry)
     .limit(1)  # Only get the latest one
     .execute()
