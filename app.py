@@ -36,9 +36,6 @@ if response and isinstance(response, list):
     # Get the public URL of the newest image
     latest_image_url = supabase.storage.from_(bucket_name).get_public_url(f"public/{latest_file['name']}")
 
-    print("Latest Image URL:", latest_image_url)
-else:
-    print("No images found in the public folder."
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
