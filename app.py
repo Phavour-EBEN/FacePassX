@@ -210,6 +210,7 @@ def verify_face():
             'verification_successful': False,
             'error': error_msg
         })
+        
 
 # At the end of your app.py file, change:
 if __name__ == '__main__':
