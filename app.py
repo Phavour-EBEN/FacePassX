@@ -41,7 +41,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configuration - hardcoded image path
-DEFAULT_IMAGE_PATH = latest_image_url  # Replace with your actual image path
+DEFAULT_IMAGE_PATH = str(latest_image_url)  # Replace with your actual image path
 # DEFAULT_IMAGE_PATH = str(image_url)  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
