@@ -45,7 +45,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configuration - hardcoded image path
-DEFAULT_IMAGE_PATH = latest_image_url  # Replace with your actual image path
+DEFAULT_IMAGE_PATH = str(latest_image_url)  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
 class FaceVerificationSystem:
@@ -146,14 +146,22 @@ def health_check():
 def verify_face():
     """Face verification endpoint using image from URL"""
     try:
-        # Download image from URL
-        response = requests.get(latest_image_url)
+        print(f"Attempting to download image from: {latest_image_url}")
+        
+        # Download image from URL with timeout
+        response = requests.get(latest_image_url, timeout=10)
+        print(f"Response status code: {response.status_code}")
+        
         if response.status_code != 200:
             return jsonify({
                 'verification_successful': False,
                 'error': f'Failed to download image from: {latest_image_url}, status code: {response.status_code}'
             })
             
+        # Check content type and size
+        print(f"Content type: {response.headers.get('Content-Type')}")
+        print(f"Content size: {len(response.content)} bytes")
+        
         # Convert image data to numpy array
         image_array = np.asarray(bytearray(response.content), dtype=np.uint8)
         image = cv.imdecode(image_array, cv.IMREAD_COLOR)
@@ -164,8 +172,11 @@ def verify_face():
                 'error': f'Failed to decode image from: {latest_image_url}'
             })
         
+        print(f"Image shape: {image.shape}")
+        
         # Verify face
         result = verifier.verify_face(image)
+        print(f"Verification result: {result}")
         
         # Ensure the entire result is JSON serializable
         for key in result:
@@ -178,8 +189,23 @@ def verify_face():
                 
         return jsonify(result)
     
+    except requests.exceptions.Timeout:
+        error_msg = f"Request timed out when trying to download image from {latest_image_url}"
+        print(error_msg)
+        return jsonify({
+            'verification_successful': False,
+            'error': error_msg
+        })
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request error: {str(e)}"
+        print(error_msg)
+        return jsonify({
+            'verification_successful': False,
+            'error': error_msg
+        })
     except Exception as e:
-        error_msg = str(e)
+        error_msg = f"Unexpected error: {str(e)}"
+        print(error_msg)
         return jsonify({
             'verification_successful': False,
             'error': error_msg
