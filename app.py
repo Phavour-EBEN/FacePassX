@@ -46,7 +46,6 @@ CORS(app)  # Enable CORS for all routes
 
 # Configuration - hardcoded image path
 DEFAULT_IMAGE_PATH = latest_image_url  # Replace with your actual image path
-# DEFAULT_IMAGE_PATH = str(image_url)  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
 class FaceVerificationSystem:
@@ -145,22 +144,24 @@ def health_check():
 
 @app.route('/verify', methods=['GET'])
 def verify_face():
-    """Face verification endpoint using hardcoded image path"""
+    """Face verification endpoint using image from URL"""
     try:
-        # Check if file exists
-        if not os.path.exists(DEFAULT_IMAGE_PATH):
+        # Download image from URL
+        response = requests.get(latest_image_url)
+        if response.status_code != 200:
             return jsonify({
                 'verification_successful': False,
-                'error': f'Image file not found: {DEFAULT_IMAGE_PATH}'
+                'error': f'Failed to download image from: {latest_image_url}, status code: {response.status_code}'
             })
             
-        # Read image from file
-        image = cv.imread(DEFAULT_IMAGE_PATH)
+        # Convert image data to numpy array
+        image_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+        image = cv.imdecode(image_array, cv.IMREAD_COLOR)
         
         if image is None:
             return jsonify({
                 'verification_successful': False,
-                'error': f'Failed to read image from: {DEFAULT_IMAGE_PATH}'
+                'error': f'Failed to decode image from: {latest_image_url}'
             })
         
         # Verify face
