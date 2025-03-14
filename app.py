@@ -135,12 +135,15 @@ class FaceVerificationSystem:
 verifier = FaceVerificationSystem()
 
 @app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'ok',
-        'message': 'Face verification API is running'
-    })
+# def health_check():
+#     """Health check endpoint"""
+#     return jsonify({
+#         'status': 'ok',
+#         'message': 'Face verification API is running'
+#     })
+def health():
+    return "API is running!"
+
 
 @app.route('/verify', methods=['GET'])
 def verify_face():
@@ -212,9 +215,13 @@ def verify_face():
         })
         
 
+
+def handler(event, context):
+    return app(event, context)
+
 # At the end of your app.py file, change:
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run()
    
