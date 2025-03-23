@@ -60,7 +60,7 @@ class FaceVerificationSystem:
         self.known_names = data['arr_1']
         
         # Threshold for face matching (can be adjusted based on requirements)
-        self.similarity_threshold = 0.5
+        self.similarity_threshold = 0.8
         print(f"Loaded {len(self.known_names)} faces for verification")
         
     def extract_face(self, image):
