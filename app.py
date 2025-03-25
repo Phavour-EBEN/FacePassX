@@ -21,20 +21,21 @@ supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 ## Define the bucket and folder path
 bucket_name = "images"
-folder_path = "public/"
+# folder_path = "public/"
 
 # Fetch all files in the bucket
 response = supabase.storage.from_(bucket_name).list()
 
 # Fetch all files inside the "public" folder
-response = supabase.storage.from_(bucket_name).list(path=folder_path)
+response = supabase.storage.from_(bucket_name).list()
 
 if response and isinstance(response, list):
     # Sort by 'created_at' in descending order (newest first)
     latest_file = sorted(response, key=lambda x: x["created_at"], reverse=True)[0]
 
     # Get the public URL of the newest image
-    latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/public/{latest_file['name']}"
+    # latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{latest_file['name']}"
+    latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}//{latest_file['name']}"
 
     print("Latest Image URL:", latest_image_url)
 else:
