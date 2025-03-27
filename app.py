@@ -34,8 +34,8 @@ if response and isinstance(response, list):
     latest_file = sorted(response, key=lambda x: x["created_at"], reverse=True)[0]
 
     # Get the public URL of the newest image
-    latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}//{latest_file['name']}"
-    # latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{latest_file['name']}"
+    # latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}//{latest_file['name']}"
+    latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{latest_file['name']}"
 
 
     print("Latest Image URL:", latest_image_url)
