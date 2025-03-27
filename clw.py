@@ -1,118 +1,143 @@
-import cv2 as cv
 import os
 import numpy as np
-# import tensorflow as tf
-import matplotlib.pyplot as plt
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
-dataset_path = "images"
-
-os.listdir(dataset_path)
-
-img = cv.imread("images/Araba Turkson/WhatsApp Image 2025-03-04 at 5.43.25 PM.jpeg")
-# opencv BGR channel format and plt reads images as RGB channel format
-
-img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-plt.imshow(img) # RGB
-
+import cv2 as cv
+from flask import Flask, jsonify
 from mtcnn.mtcnn import MTCNN
-
-detector = MTCNN()
-results = detector.detect_faces(img)
-
-results
-
-x,y,w,h = results[0]['box']
-
-img = cv.rectangle(img, (x,y), (x+w, y+h), (0,0,255), 10)
-plt.imshow(img)
-
-my_face = img[y:y+h, x:x+w]
-#Facenet takes as input 160x160
-my_face = cv.resize(my_face, (200,200))
-plt.imshow(my_face)
-
-class FACELOADING:
-    def __init__(self, directory):
-        self.directory = directory
-        self.target_size = (200,200)
-        self.X = []
-        self.Y = []
-        self.detector = MTCNN()
-
-
-    def extract_face(self, filename):
-        img = cv.imread(filename)
-        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-        x,y,w,h = self.detector.detect_faces(img)[0]['box']
-        x,y = abs(x), abs(y)
-        face = img[y:y+h, x:x+w]
-        face_arr = cv.resize(face, self.target_size)
-        return face_arr
-
-
-    def load_faces(self, dir):
-        FACES = []
-        for im_name in os.listdir(dir):
-            try:
-                path = dir + im_name
-                single_face = self.extract_face(path)
-                FACES.append(single_face)
-            except Exception as e:
-                pass
-        return FACES
-
-    def load_classes(self):
-        for sub_dir in os.listdir(self.directory):
-            path = self.directory +'/'+ sub_dir+'/'
-            FACES = self.load_faces(path)
-            labels = [sub_dir for _ in range(len(FACES))]
-            print(f"Loaded successfully: {len(labels)}")
-            self.X.extend(FACES)
-            self.Y.extend(labels)
-
-        return np.asarray(self.X), np.asarray(self.Y)
-
-
-    def plot_images(self):
-        plt.figure(figsize=(18,16))
-        for num,image in enumerate(self.X):
-            ncols = 3
-            nrows = len(self.Y)//ncols + 1
-            plt.subplot(nrows,ncols,num+1)
-            plt.imshow(image)
-            plt.axis('off')
-
-faceloading = FACELOADING(dataset_path)
-X, Y = faceloading.load_classes()
-
-plt.figure(figsize=(16,12))
-for num,image in enumerate(X):
-    ncols = 3
-    nrows = len(Y)//ncols + 1
-    plt.subplot(nrows,ncols,num+1)
-    plt.imshow(image)
-    plt.axis('off')
-
-
 from keras_facenet import FaceNet
-embedder = FaceNet()
+from scipy.spatial.distance import cosine
+from flask_cors import CORS
 
-def get_embedding(face_pixels):
-    face_pixels = face_pixels.astype('float32')
-    face_pixels = np.expand_dims(face_pixels, axis=0)
-    yhat = embedder.embeddings(face_pixels)
-    return yhat[0]
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
-EMBEDDED_X = []
+# Configuration - hardcoded image path
+DEFAULT_IMAGE_PATH = "D:\Telegram\photo_8_2025-03-27_02-07-40.jpg"  # Replace with your actual image path
 
-for img in X:
-    EMBEDDED_X.append(get_embedding(img))
+# Load embeddings and detector/embedder models
+class FaceVerificationSystem:
+    def __init__(self, embeddings_path='faces_embeddings_done_4classes.npz'):
+        # Load the face detector and embedder
+        self.detector = MTCNN()
+        self.embedder = FaceNet()
+        
+        # Load pre-trained embeddings
+        data = np.load(embeddings_path)
+        self.known_embeddings = data['arr_0']
+        self.known_names = data['arr_1']
+        
+        # Threshold for face matching (can be adjusted based on requirements)
+        self.similarity_threshold = 0.8
+        print(f"Loaded {len(self.known_names)} faces for verification")
+        
+    def extract_face(self, image):
+        """Extract face from an image"""
+        # Convert to RGB for MTCNN
+        rgb_image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+        
+        # Detect faces
+        results = self.detector.detect_faces(rgb_image)
+        
+        if not results:
+            raise Exception("No face detected in the image")
+        
+        # Extract the bounding box
+        x, y, w, h = results[0]['box']
+        x, y = abs(x), abs(y)
+        
+        # Extract face region
+        face = rgb_image[y:y+h, x:x+w]
+        
+        # Resize to required size
+        face_resized = cv.resize(face, (200, 200))
+        
+        return face_resized
+    
+    def get_embedding(self, face_pixels):
+        """Get embedding from face pixels"""
+        face_pixels = face_pixels.astype('float32')
+        face_pixels = np.expand_dims(face_pixels, axis=0)
+        embedding = self.embedder.embeddings(face_pixels)
+        return embedding[0]
+    
+    def verify_face(self, image):
+        """Verify a face against the known embeddings"""
+        try:
+            # Extract face
+            face = self.extract_face(image)
+            
+            # Get embedding
+            embedding = self.get_embedding(face)
+            
+            # Calculate similarity with all known embeddings
+            similarities = []
+            for known_embedding in self.known_embeddings:
+                similarity = 1 - cosine(embedding, known_embedding)
+                similarities.append(similarity)
+            
+            # Find the best match
+            best_match_index = np.argmax(similarities)
+            best_match_score = similarities[best_match_index]
+            
+            # Check if the similarity is above threshold
+            verification_successful = best_match_score > self.similarity_threshold
+            
+            result = {
+                'verification_successful': verification_successful,
+                'confidence': float(best_match_score),
+                'identity': str(self.known_names[best_match_index]) if verification_successful else None,
+                'matching_score': f"{best_match_score:.2f}"
+            }
+            
+            return result
+            
+        except Exception as e:
+            return {
+                'verification_successful': False,
+                'error': str(e)
+            }
 
-EMBEDDED_X = np.asarray(EMBEDDED_X)
+# Initialize the verification system
+verifier = FaceVerificationSystem()
 
-np.savez_compressed('faces_embeddings_done_4classes.npz', EMBEDDED_X, Y)
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'Face verification API is running'
+    })
 
-Y
+@app.route('/verify', methods=['GET'])
+def verify_face():
+    """Face verification endpoint using hardcoded image path"""
+    try:
+        # Check if file exists
+        if not os.path.exists(DEFAULT_IMAGE_PATH):
+            return jsonify({
+                'verification_successful': False,
+                'error': f'Image file not found: {DEFAULT_IMAGE_PATH}'
+            }), 404
+            
+        # Read image from file
+        image = cv.imread(DEFAULT_IMAGE_PATH)
+        
+        if image is None:
+            return jsonify({
+                'verification_successful': False,
+                'error': f'Failed to read image from: {DEFAULT_IMAGE_PATH}'
+            }), 400
+            
+        # Verify face
+        result = verifier.verify_face(image)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({
+            'verification_successful': False,
+            'error': str(e)
+        }), 500
 
-EMBEDDED_X
+if __name__ == '__main__':
+    # Run the Flask app
+    app.run(host='0.0.0.0', port=5000, debug=True)
