@@ -11,8 +11,8 @@ keras-facenet>=0.3.2
 
 # Computer vision
 # opencv-python>=4.5.1
-mtcnn>=0.1.0
-opencv-python-headless
+mtcnn
+opencv-python
 
 # Machine learning
 scikit-learn>=0.24.1
