@@ -19,35 +19,11 @@ SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
-## Define the bucket and folder path
-bucket_name = "images"
-# folder_path = "public/"
-
-# Fetch all files in the bucket
-response = supabase.storage.from_(bucket_name).list()
-
-# Fetch all files inside the "public" folder
-response = supabase.storage.from_(bucket_name).list()
-
-if response and isinstance(response, list):
-    # Sort by 'created_at' in descending order (newest first)
-    latest_file = sorted(response, key=lambda x: x["created_at"], reverse=True)[0]
-
-    # Get the public URL of the newest image
-    latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}//{latest_file['name']}"
-    # latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{latest_file['name']}"
-
-
-    print("Latest Image URL:", latest_image_url)
-else:
-    print("No images found in the public folder.")
+# Define the bucket and folder path
 
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
-
-# Configuration - hardcoded image path
-DEFAULT_IMAGE_PATH = str(latest_image_url)  # Replace with your actual image path
 
 # Load embeddings and detector/embedder models
 class FaceVerificationSystem:
@@ -147,6 +123,29 @@ def health_check():
 @app.route('/verify', methods=['GET'])
 def verify_face():
     """Face verification endpoint using image from URL"""
+    bucket_name = "images"
+# folder_path = "public/"
+
+# Fetch all files in the bucket
+    response = supabase.storage.from_(bucket_name).list()
+
+# Fetch all files inside the "public" folder
+    response = supabase.storage.from_(bucket_name).list()
+
+    if response and isinstance(response, list):
+        # Sort by 'created_at' in descending order (newest first)
+        latest_file = sorted(response, key=lambda x: x["created_at"], reverse=True)[0]
+
+        # Get the public URL of the newest image
+        latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}//{latest_file['name']}"
+        # latest_image_url = f"{SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{latest_file['name']}"
+
+
+        print("Latest Image URL:", latest_image_url)
+    else:
+        print("No images found in the public folder.")
+
+    
     try:
         print(f"Attempting to download image from: {latest_image_url}")
         
